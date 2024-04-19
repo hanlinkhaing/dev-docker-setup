@@ -12,6 +12,7 @@ networks:
 
 services:
   elasticsearch:
+    platform: linux/amd64
     image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION}
     container_name: local-elasticsearch-${ES_VERSION}
     environment:
@@ -35,6 +36,7 @@ services:
       - local
 
   kibana:
+    platform: linux/amd64
     image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION}
     container_name: local-kibana-${KIBANA_VERSION}
     environment:
@@ -47,11 +49,8 @@ services:
       - local
 
   postgresql:
-    build:
-      context: ./postgres
-      args:
-        - POSTGRES_VERSION=${POSTGRES_VERSION}
-    image: local-postgres-${POSTGRES_VERSION}
+    platform: linux/amd64
+    image: postgres:${POSTGRES_VERSION}
     container_name: local-postgres-${POSTGRES_VERSION}
     hostname: postgresql
     environment:
@@ -62,11 +61,8 @@ services:
       - local
 
   mongo:
-    build:
-      context: ./mongo
-      args:
-        - MONGO_VERSION=${MONGO_VERSION}
-    image: local-mongo-${MONGO_VERSION}
+    platform: linux/amd64
+    image: mongo:${MONGO_VERSION}
     container_name: local-mongo-${MONGO_VERSION}
     hostname: mongo
     environment:
@@ -84,11 +80,8 @@ services:
     tty: true
 
   rabbitmq:
-    build:
-      context: ./rabbitmq
-      args:
-        - RABBITMQ_VERSION=${RABBITMQ_VERSION}
-    image: local-rabbitmq-${RABBITMQ_VERSION}
+    platform: linux/amd64
+    image: rabbitmq:${RABBITMQ_VERSION}
     container_name: local-rabbitmq-${RABBITMQ_VERSION}
     hostname: rabbitmq
     environment:
@@ -104,11 +97,8 @@ services:
     tty: true
 
   redis:
-    build:
-      context: ./redis
-      args:
-        - REDIS_VERSION=${REDIS_VERSION}
-    image: local-redis-${REDIS_VERSION}
+    platform: linux/amd64
+    image: redis:${REDIS_VERSION}
     container_name: local-redis-${REDIS_VERSION}
     hostname: redis
     entrypoint: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
@@ -121,23 +111,11 @@ services:
     tty: true
 
   jenkin:
-    build:
-      context: ./jenkin
-      args:
-        - JENKINS_VERSION=${JENKINS_VERSION}
-    image: local-jenkin-${JENKINS_VERSION}
+    platform: linux/amd64
+    image: jenkins:${JENKINS_VERSION}
     container_name: local-jenkin-${JENKINS_VERSION}
     hostname: jenkin
     volumes:
       - ${DATA_PATH_HOST}/jenkin/data:/var/jenkins_home
     ports:
       - "${JENKINS_PORT}:8080"
-
-  structurizr:
-    image: structurizr/lite:latest
-    container_name: local-structurizr
-    # restart: always
-    ports:
-      - "${STRUCTURIZR_PORT}:8080"
-    volumes:
-      - ./structurizr:/usr/local/structurizr
