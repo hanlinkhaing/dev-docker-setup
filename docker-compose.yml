@@ -1,0 +1,143 @@
+version: "3.8"
+
+networks:
+  local:
+    name: local
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.10.0.0/16
+          gateway: 172.10.0.1
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION}
+    container_name: local-elasticsearch-${ES_VERSION}
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=${ES_PASSWORD}
+      - xpack.security.enabled=true
+      - xpack.security.authc.api_key.enabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ${DATA_PATH_HOST}/elasticsearch/data:/usr/share/elasticsearch/data
+    ports:
+      - ${ES_PORT}:9200
+    networks:
+      - local
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION}
+    container_name: local-kibana-${KIBANA_VERSION}
+    environment:
+      - ELASTICSEARCH_HOSTS=${ES_HOST}
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ES_PASSWORD}
+    ports:
+      - ${KIBANA_PORT}:5601
+    networks:
+      - local
+
+  postgresql:
+    build:
+      context: ./postgres
+      args:
+        - POSTGRES_VERSION=${POSTGRES_VERSION}
+    image: local-postgres-${POSTGRES_VERSION}
+    container_name: local-postgres-${POSTGRES_VERSION}
+    hostname: postgresql
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - ${POSTGRES_PORT}:5432
+    networks:
+      - local
+
+  mongo:
+    build:
+      context: ./mongo
+      args:
+        - MONGO_VERSION=${MONGO_VERSION}
+    image: local-mongo-${MONGO_VERSION}
+    container_name: local-mongo-${MONGO_VERSION}
+    hostname: mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_USER=${MONGO_USER}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_DB=${MONGO_DB}
+    volumes:
+      - ${DATA_PATH_HOST}/mongo:/data/db
+    ports:
+      - "${MONGO_HOST_PORT}:27017"
+    networks:
+      - local
+    tty: true
+
+  rabbitmq:
+    build:
+      context: ./rabbitmq
+      args:
+        - RABBITMQ_VERSION=${RABBITMQ_VERSION}
+    image: local-rabbitmq-${RABBITMQ_VERSION}
+    container_name: local-rabbitmq-${RABBITMQ_VERSION}
+    hostname: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - ${DATA_PATH_HOST}/rabbitmq:/var/lib/rabbitmq/mnesia
+    ports:
+      - "${RABBITMQ_HOST_PORT}:5672"
+      - "${RABBITMQ_MANAGEMENT_HOST_PORT}:15672"
+    networks:
+      - local
+    tty: true
+
+  redis:
+    build:
+      context: ./redis
+      args:
+        - REDIS_VERSION=${REDIS_VERSION}
+    image: local-redis-${REDIS_VERSION}
+    container_name: local-redis-${REDIS_VERSION}
+    hostname: redis
+    entrypoint: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - ${DATA_PATH_HOST}/redis/data:/data
+    ports:
+      - "${REDIS_HOST_PORT}:6379"
+    networks:
+      - local
+    tty: true
+
+  jenkin:
+    build:
+      context: ./jenkin
+      args:
+        - JENKINS_VERSION=${JENKINS_VERSION}
+    image: local-jenkin-${JENKINS_VERSION}
+    container_name: local-jenkin-${JENKINS_VERSION}
+    hostname: jenkin
+    volumes:
+      - ${DATA_PATH_HOST}/jenkin/data:/var/jenkins_home
+    ports:
+      - "${JENKINS_PORT}:8080"
+
+  structurizr:
+    image: structurizr/lite:latest
+    container_name: local-structurizr
+    # restart: always
+    ports:
+      - "${STRUCTURIZR_PORT}:8080"
+    volumes:
+      - ./structurizr:/usr/local/structurizr
