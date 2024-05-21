@@ -1,0 +1,2 @@
+CREATE DATABASE IF NOT EXISTS dabet_wc;
+USE dabet_wc;
